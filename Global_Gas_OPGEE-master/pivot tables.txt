@@ -1,0 +1,24 @@
+data_fields_all['Basin'] = data_fields_all['Basin'].replace('160A' ,'160')
+
+df_average_EnvParam1 = data_fields_all.pivot_table( 
+                                index='Basin', 
+                                values = 'Field_age',
+                                aggfunc = np.mean)
+df_average_EnvParam2 = data_fields_all.pivot_table( 
+                                index='Basin', 
+                                values = 'Field_depth',
+                                aggfunc = np.mean)
+df_average_EnvParam3 = data_fields_all.pivot_table( 
+                                index='Basin', 
+                                values = 'deg_API',
+                                aggfunc = np.mean)
+df_average_EnvParam4 = data_fields_all.pivot_table( 
+                                index='Basin', 
+                                values = 'WOR_BBL_B',
+                                aggfunc = np.mean)
+
+df_average_EnvParam = pd.concat((df_average_EnvParam1, 
+				df_average_EnvParam2, 
+				df_average_EnvParam3, 
+				df_average_EnvParam4), axis = 1)
+
