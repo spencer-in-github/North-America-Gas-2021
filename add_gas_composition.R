@@ -7,7 +7,7 @@
 
 # Author          Spencer Zhang
 # Date            Nov 9 2023
-# Last Updated    Jan 30 2024
+# Last Updated    Jun 18 2024
 
 # Updated Jan 7 2024
 #         scaled the gas composition to ignore H2 and everything else add to one
@@ -15,6 +15,9 @@
 # Updated Jan 30 2024
 #         merge the scaled error fields with other fields
 #         so we can rerun with only one input sheet
+
+# Updated Jun 18 2024
+#         clean the code script for publication
 
 ----------------------------------------
 #---         1 Package              ----       

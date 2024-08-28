@@ -32,9 +32,7 @@ if (!(require("gridExtra"))) install.packages("gridExtra"); library(gridExtra)
 if (!(require("mekko"))) install.packages("mekko"); library(mekko)
 if (!(require("stringr"))) install.packages("stringr"); library(stringr)
 if (!(require("ggtext"))) install.packages("ggtext"); library(ggtext)
-
-
-
+if (!(require("paletteer"))) install.packages("paletteer"); library(paletteer)
 
 
 # 1 Global Variables ---------------------------
@@ -122,7 +120,7 @@ offshore_input <- read.csv(paste0(PATH_INPUT,"offshore_input.csv"))
 
 
 
-## OPGEE raw files ----
+## OPGEE files ----
 
 ### read OPGEE run result sheets ----
 gas_results = read_excel(paste0(PATH_OPGEE_RESULT_SHEET,"gas_runs_pure_aerial_results.xlsx"))
@@ -134,8 +132,15 @@ df_viz_gas <- CI_by_process(clean_and_join_input(gas_results,US_GAS_WITH_COMP_sc
 df_viz_oil <- CI_by_process(clean_and_join_input(oil_results,US_OIL))
 df_viz_offshore <- CI_by_process_offshore(offshore_results, offshore_input, gom_sf_final) 
 
+View(df_viz_gas)
 View(df_viz_offshore)
 View(gom_sf_final)
+
+# df_viz_vff = rbind(df_viz_gas, df_viz_oil)
+# write_csv(df_viz_vff %>% st_drop_geometry(), "df_viz_vff.csv")
+
+# View the updated dataframe
+print(df_viz_gas)
 
 ### read OPGEE uncertainty run result sheets ----
 gas_up <- read_excel(paste0(PATH_OPGEE_UNCERTAINTY,"gas upper (2).xlsx"))
@@ -447,11 +452,11 @@ p1a <-
         axis.title.x=element_blank(),
         axis.title.y=element_blank()) + 
   #scale_color_oil_gas() + 
-  scale_color_manual(values = c("GAS" = "red", "OIL" = "darkgreen")) + 
+  scale_color_manual(values = c("GAS" = "#B1040E", "OIL" = "#008566")) + 
   labs(color = "Production Type") +
   guides(color ="none")
  
-ggsave(filename = paste0(PATH_SAVE_VIZ, "f1a_well.png"), 
+ggsave(filename = paste0(PATH_SAVE_VIZ, "f1a_well.svg"), 
        plot= p1a,
        #width = 100,
        #height = 50,
@@ -494,12 +499,13 @@ p1b <-
         axis.title.x=element_blank(),
         axis.title.y=element_blank()) + 
   #scale_color_oil_gas() + 
-    scale_color_manual(values = c("GAS" = "red", "OIL" = "darkgreen")) + 
-    scale_fill_oil_gas() + 
+    scale_fill_manual(values = c("GAS" = "#E50808", "OIL" = "#1AECBA")) +
+    scale_color_manual(values = c("GAS" = "#B1040E", "OIL" = "#008566")) +
+    #scale_fill_oil_gas() + 
   labs(color = "Production Type") +
   guides(color ="none", fill = "none")
 
-ggsave(filename = paste0(PATH_SAVE_VIZ, "f1a_voronoi.png"), 
+ggsave(filename = paste0(PATH_SAVE_VIZ, "f1a_voronoi.svg"), 
        plot= p1b,
        #width = 100,
        #height = 50,
@@ -536,12 +542,13 @@ p1c <-
         axis.title.x=element_blank(),
         axis.title.y=element_blank()) + 
   #scale_color_oil_gas() + 
-  scale_color_manual(values = c("GAS" = "red", "OIL" = "darkgreen")) + 
-  scale_fill_oil_gas() + 
+  scale_color_manual(values = c("GAS" = "#B1040E", "OIL" = "#008566")) +
+  scale_fill_manual(values = c("GAS" = "#E50808", "OIL" = "#1AECBA")) +
+  #scale_fill_oil_gas() + 
   labs(color = "Production Type") +
   guides(color ="none", fill = "none")
 
-ggsave(filename = paste0(PATH_SAVE_VIZ, "f1a_field.png"), 
+ggsave(filename = paste0(PATH_SAVE_VIZ, "f1a_field.svg"), 
        plot= p1c,
        #width = 100,
        #height = 50,
@@ -563,6 +570,7 @@ main_map <-
   geom_sf(data = states, fill = "white", color = "black", lwd = 0.2) +  # Plot US boundaries
   geom_sf(data = df_viz_bibasin %>% rename("Production Type" = Production_Type), aes(fill = `Production Type`), color = NA) +  # Use 'fill' for polygon color
   scale_fill_oil_gas() + 
+  scale_fill_manual(values = c("GAS" = "#E50808", "OIL" = "#1AECBA")) +
   theme_NAG_publication() +
   theme(axis.line=element_blank(),
         axis.text.x=element_blank(),
@@ -574,7 +582,7 @@ main_map <-
   coord_sf(crs = st_crs(states), xlim = c(-125, -66), ylim = c(24, 50)) +  # Focus on the US
   labs(x = "Longitude", y = "Latitude")  # Customize labels
 
-ggsave(filename = paste0(PATH_SAVE_VIZ, "f1d_main.png"), 
+ggsave(filename = paste0(PATH_SAVE_VIZ, "f1d_main.svg"), 
        plot= main_map,
        #width = 100,
        #height = 50,
@@ -1369,4 +1377,420 @@ df_viz %>%
     legend.position="none",
     plot.title = element_text(size=11)
   )
+
+
+# Figure 4 base map showing regional states ----
+
+## 4.2 basemap for interregional transmission ----
+# pacific
+state_pacific = c("WA", "OR", "CA")
+# rocky mountain
+state_rockymountain = c("ID", "MT", "WY", "NV", "UT", "CO")
+# southwest
+state_southwest = c("AZ", "NM", "TX", "OK")
+# midwest
+state_midwest = c("ND", "SD", "NE", "KS", "MN", "IA", "MO", "WI", "IL", "IN", "MI", "OH")
+# northeast
+state_northeast = c("VT", "ME", "NH", "MA", "RI", "CT", "NY", "PA", "NJ")
+# southeast
+state_southeast = c("AR", "LA", "MS", "TN", "KY", "AL", "FL", "GA", "SC", "NC", "VA", "WV", "DC","DE", "MD")
+
+library(RColorBrewer)
+states = states %>% mutate(region = case_when(
+  STUSPS %in% state_pacific ~ "Pacific",
+  STUSPS %in% state_rockymountain ~ "Rocky Mountain",
+  STUSPS %in% state_southeast ~ "Southeast",
+  STUSPS %in% state_southwest ~ "Southwest",
+  STUSPS %in% state_northeast ~ "Northeast",
+  STUSPS %in% state_midwest ~ "Midwest",
+  STUSPS == "GOM" ~ "Offshore"
+))
+
+states_with_offshore <- states %>%
+  rbind(gom_sf_final)
+
+states_with_offshore <- bind_rows(states, gom_sf_final %>% 
+                                    mutate(STUSPS = "GOM",
+                                           NAME = "Offshore Gulf of Mexico",
+                                           region = "Offshore") %>%
+                                    st_set_crs(st_crs(states)))  %>% 
+                                    mutate(region = case_when(
+                                      NAME == "Alaska" ~ "Pacific",
+                                      T ~ region
+                                    ))
+View(states_with_offshore)
+
+states_with_offshore$region <- factor(states_with_offshore$region, levels = c("Pacific", 
+                                                  "Rocky Mountain",
+                                                  "Southwest",
+                                                  "Midwest",
+                                                  "Southeast",
+                                                  "Northeast",
+                                                  "Offshore"))
+# Generate seven colors from the "Blues" palette
+blues_palette <- brewer.pal(n = 7, name = "Blues")
+# Print the color codes
+print(blues_palette)
+
+state_map <-
+  ggplot() +
+  geom_sf(data = states_with_offshore %>% select(STUSPS, NAME, region), aes(fill = region), color = "white", lwd = 0.2) +  # Plot US boundaries+
+  geom_sf(data = gom_sf_final, fill = "#084594", lwd= 0) + 
+  scale_size(range = c(1, 20)) +  # Adjust size range based on your data
+  scale_fill_manual(values = blues_palette,
+                    name = "Region") +
+  #scale_fill_oil_gas() + 
+  theme_NAG_publication() +
+  theme(axis.line=element_blank(),
+        axis.text.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks=element_blank(),
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        legend.position="right",
+        legend.direction =  "vertical"
+        ) + 
+  coord_sf(crs = st_crs(states), xlim = c(-125, -66), ylim = c(24, 50)) +  # Focus on the US
+  labs(x = "Longitude", y = "Latitude") 
+
+ggsave(filename = paste0(PATH_SAVE_VIZ, "state_map.png"), 
+       plot= state_map,
+       #width = 100,
+       #height = 50,
+       dpi = 300,
+       units = "cm",
+       bg = "transparent")
+
+## 4.2 alaska ----
+al_map <-
+  ggplot() +
+  geom_sf(data = states_with_offshore %>% select(STUSPS, NAME, region), aes(fill = region), color = "white", lwd = 0.2) +  # Plot US boundaries+
+  geom_sf(data = gom_sf_final, fill = "#084594", lwd= 0) + 
+  scale_size(range = c(1, 20)) +  # Adjust size range based on your data
+  scale_fill_manual(values = blues_palette,
+                    name = "Region") +
+  #scale_fill_oil_gas() + 
+  theme_NAG_publication() +
+  theme(axis.line=element_blank(),
+        axis.text.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks=element_blank(),
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        legend.position="right",
+        legend.direction =  "vertical"
+  )  + 
+  coord_sf(expand = FALSE,xlim = c(-180, -128), ylim = c(49, 73))  
+
+ggsave(filename = paste0(PATH_SAVE_VIZ, "alaska_map.png"), 
+       plot= al_map,
+       #width = 100,
+       #height = 50,
+       dpi = 300,
+       units = "cm",
+       bg = "transparent")
+
+## 4.1/3 CI state map ----
+
+state_ci_map <-
+  ggplot() +
+  geom_sf(data = states, fill = "white", color = "black",, lwd = 0.2) +
+  geom_sf(data = df_viz_basin %>% mutate(
+                                total_CI = 
+                                  CI_gCO2_MJ + field_mid_em_factor_gCO2_MJ,
+                                total_CI_gCO2_MJ = as.numeric(total_CI),
+                                total_CI_cate = case_when(
+                                  total_CI < 5 ~ "0-5",
+                                  total_CI < 10 ~ "5-10",
+                                  total_CI < 15 ~ "10-15",
+                                  total_CI < 20 ~ "15-20",
+                                  total_CI < 30 ~ "20-30",
+                                  TRUE ~ ">30"
+                                ),
+                                total_CI_cate = fct_reorder(total_CI_cate,
+                                                            total_CI_gCO2_MJ),
+                                CI_gCO2_MJ = as.numeric(CI_gCO2_MJ),
+                                    CI_cate = case_when(
+                                      CI_gCO2_MJ < 5 ~ "0-5",
+                                      CI_gCO2_MJ < 10 ~ "5-10",
+                                      CI_gCO2_MJ < 15 ~ "10-15",
+                                      CI_gCO2_MJ < 20 ~ "15-20",
+                                      CI_gCO2_MJ < 30 ~ "20-30",
+                                      TRUE ~ ">30"
+                                    ),
+                                CI_cate = fct_reorder(CI_cate, CI_gCO2_MJ)),
+          aes(fill = CI_cate, alpha= Annual_Gas), color = "white", lwd = 0) +  
+  #geom_sf(data = gom_sf_final, fill = "#084594", lwd= 0) + 
+  scale_size(range = c(1, 20)) +  # Adjust size range based on your data
+  scale_fill_manual(values = c("0-5" = "lightgreen",
+                               "5-10" = "green", 
+                               "10-15" = "yellow",
+                               "15-20" = "gold",
+                               "20-30" = "orange",
+                               "100-500" = "coral",
+                               ">30" = "red"),
+                    name = "Carbon Intensity Range \n gCO2e MJ^-1") +
+  #scale_fill_oil_gas() + 
+  scale_alpha_continuous(range = c(0.3, 1)) +
+  theme_NAG_publication() +
+  theme(axis.line=element_blank(),
+        axis.text.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks=element_blank(),
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        legend.position="right",
+        legend.direction =  "vertical"
+  ) + 
+  coord_sf(crs = st_crs(states), xlim = c(-125, -66), ylim = c(24, 50)) +  # Focus on the US
+  labs(x = "Longitude", y = "Latitude") 
+
+ggsave(filename = paste0(PATH_SAVE_VIZ, "basin_ci_upstream_map.png"), 
+       plot= state_ci_map,
+       #width = 100,
+       #height = 50,
+       dpi = 300,
+       units = "cm",
+       bg = "transparent")
+
+## 4.1 4.3 alaska ci----
+alaska_plot <- 
+  ggplot() +
+  geom_sf(data = alaska_sf, fill = "white", color = "black", lwd = 0.7) + 
+  geom_sf(data = df_viz_basin %>% filter(Basin == "Cook Inlet Basin") %>% mutate(
+    total_CI = 
+      CI_gCO2_MJ + field_mid_em_factor_gCO2_MJ,
+    total_CI_gCO2_MJ = as.numeric(total_CI),
+    total_CI_cate = case_when(
+      total_CI < 5 ~ "0-5",
+      total_CI < 10 ~ "5-10",
+      total_CI < 15 ~ "10-15",
+      total_CI < 20 ~ "15-20",
+      total_CI < 30 ~ "20-30",
+      TRUE ~ ">30"
+    ),
+    total_CI_cate = fct_reorder(total_CI_cate,
+                                total_CI_gCO2_MJ),
+    CI_gCO2_MJ = as.numeric(CI_gCO2_MJ),
+    CI_cate = case_when(
+      CI_gCO2_MJ < 5 ~ "0-5",
+      CI_gCO2_MJ < 10 ~ "5-10",
+      CI_gCO2_MJ < 15 ~ "10-15",
+      CI_gCO2_MJ < 20 ~ "15-20",
+      CI_gCO2_MJ < 30 ~ "20-30",
+      TRUE ~ ">30"
+    ),
+    CI_cate = fct_reorder(CI_cate, CI_gCO2_MJ)),
+    aes(fill = total_CI_cate, alpha= Annual_Gas), color = "white", lwd = 0) +  
+  #geom_sf(data = gom_sf_final, fill = "#084594", lwd= 0) + 
+  scale_size(range = c(1, 20)) +  # Adjust size range based on your data
+  scale_fill_manual(values = c("0-5" = "lightgreen",
+                               "5-10" = "green", 
+                               "10-15" = "yellow",
+                               "15-20" = "gold",
+                               "20-30" = "orange",
+                               "100-500" = "coral",
+                               ">30" = "red"),
+                    name = "Carbon Intensity Range \n gCO2e MJ^-1") +
+  #scale_fill_oil_gas() + 
+  scale_alpha_continuous(range = c(0.3, 1)) +
+  theme_NAG_publication() +
+  theme(axis.line=element_blank(),
+        axis.text.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks=element_blank(),
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        legend.position="none"
+  ) + 
+  coord_sf(expand = FALSE,xlim = c(-180, -128), ylim = c(49, 73))  
+
+ggsave(filename = paste0(PATH_SAVE_VIZ, "ci_map_alaska_total.png"), 
+       plot= alaska_plot,
+       #width = 100,
+       #height = 50,
+       dpi = 300,
+       units = "cm",
+       bg = "transparent")
+
+
+# Policy run ----
+
+clean_result = function(PATH, 
+                        gas_file, oil_file, offshore_file, 
+                        save_name, PATH_save){
+  
+  # # for debug
+  # gas_file = "gas_run_updated_opgee_0719.xlsx"
+  # oil_file = "oil_run_updated_opgee_0719.xlsx"
+  # offshore_file = "offshore_base.xlsx"
+  
+  ### read OPGEE run result sheets
+  gas_results = read_excel(paste0(PATH,gas_file))
+  oil_results = read_excel(paste0(PATH,oil_file))
+  offshore_results = read_excel(paste0(PATH, offshore_file))
+  
+  # # for debug
+  # v(gas_results)
+  # v(offshore_results)
+  
+  # merge with input, clean dataframe for visualization (input, process breakdown, coords, etc)
+  df_viz_gas <- CI_by_process(clean_and_join_input(gas_results,US_GAS_WITH_COMP_scaled))
+  df_viz_oil <- CI_by_process(clean_and_join_input(oil_results,US_OIL))
+  df_viz_offshore <- CI_by_process_offshore(offshore_results, offshore_input, gom_sf_final) 
+  
+  # # for debug
+  # v(df_viz_gas)
+  
+  df_base = rbind(df_viz_gas %>% mutate(Production_Type = "GAS"), df_viz_oil%>% mutate(Production_Type = "OIL")) %>%
+    rbind(df_viz_offshore) %>%
+    filter(Annual_Gas > 0 & !is.na(CI_gCO2_MJ))
+  
+  total_gas = sum(df_base %>%
+                    filter(!is.na(CI_gCO2_MJ)) %>%
+                    mutate(Annual_Gas = as.numeric(Annual_Gas)) %>%
+                    .$Annual_Gas)
+  
+  df_base$gas_percent = df_base$Annual_Gas/total_gas
+  
+  df_base = df_base %>%
+    mutate(CI_gCO2_MJ = as.numeric(CI_gCO2_MJ)) 
+  df_base = df_base[order(df_base$CI_gCO2_MJ),]
+  df_base$gas_cum = cumsum(df_base$gas_percent)
+  
+  write_csv(df_base %>% st_drop_geometry(), paste0(PATH_save, "/", save_name, ".csv"))
+  
+  return(df_base)
+}
+
+PATH_POLICY = "/Users/spencerzhang/GitHub/PhD/North-America-Gas-2021/NAG runs/Policy run/"
+PATH_POLICY_Save = "/Users/spencerzhang/GitHub/PhD/North-America-Gas-2021/NAG runs/Policy run/policy_visualization"
+
+files = list.files(PATH_POLICY)
+files
+
+df_base = clean_result(PATH_POLICY,
+                       "gas_run_updated_opgee_0719.xlsx",
+                       "oil_run_updated_opgee_0719.xlsx", 
+                       "offshore_base.xlsx",
+                       "df_base",
+                       PATH_POLICY_Save)
+df_flare_25 = clean_result(PATH_POLICY,
+                           "no_routine_flare_25_gas.xlsx",
+                           "no_routine_flare_25_oil.xlsx", 
+                           "offshore_flaring_moderate.xlsx",
+                           "df_flare_25",
+                           PATH_POLICY_Save)
+df_flare_5 = clean_result(PATH_POLICY,
+                          "no_routine_flare_5_gas.xlsx",
+                          "no_routine_flare_5_oil.xlsx",
+                          "offshore_flaring_extreme.xlsx", 
+                          "df_flare_5",
+                          PATH_POLICY_Save)
+df_extreme = clean_result(PATH_POLICY,
+                          "flare_5_vf_25_gas.xlsx",
+                          "flare_5_vf_25_oil.xlsx", 
+                          "offshore_extreme_flare5tile_vf75reduction.xlsx",
+                          "df_extreme",
+                          PATH_POLICY_Save)
+df_vf_75 = clean_result(PATH_POLICY,
+                        "fugitives_75_gas.xlsx",
+                           "fugitives_75_oil.xlsx", 
+                        "offshore_vf_75_reduction.xlsx",
+                           "df_vf_75",
+                        PATH_POLICY_Save)
+df_vf_50 = clean_result(PATH_POLICY,
+                        "fugitives_50_gas.xlsx",
+                          "fugitives_50_oil.xlsx",
+                        "offshore_vf_50_reduction.xlsx",
+                          "df_vf_50",
+                        PATH_POLICY_Save)
+
+df = df_base %>% st_drop_geometry() %>%
+  left_join(df_flare_25 %>%
+              select(FIPS, Production_Type, flare_25 = CI_gCO2_MJ) %>% st_drop_geometry()) %>%
+  left_join(df_flare_5 %>%
+              select(FIPS, Production_Type, flare_5 = CI_gCO2_MJ)%>% st_drop_geometry()) %>%
+  left_join(df_extreme %>%
+              select(FIPS, Production_Type, extreme = CI_gCO2_MJ)%>% st_drop_geometry())
+  
+# Updated base run results w uncertainty ----
+df_up = clean_result(PATH_POLICY,
+                           "gas_up.xlsx",
+                           "oil_up.xlsx", 
+                           "offshore_up.xlsx",
+                           "base_up",
+                           PATH_POLICY_Save)
+df_lo = clean_result(PATH_POLICY,
+                     "gas_lo.xlsx",
+                     "oil_lo.xlsx", 
+                     "offshore_lo.xlsx",
+                     "base_lo",
+                          PATH_POLICY_Save)
+
+colnames(df_up)
+
+
+df_base_full = df_base %>%
+  st_drop_geometry() %>%
+  left_join(df_lo %>%
+              st_drop_geometry() %>%
+              select(GEOID,Production_Type, CI_lo = CI_gCO2_MJ)) %>%
+  left_join(df_up %>%
+              st_drop_geometry() %>%
+              select(GEOID,Production_Type, CI_up = CI_gCO2_MJ))
+
+View(df_base_full)
+
+save_local(df_base_full, "df_base_full")
+
+A_field_midstream = read.csv(paste0(PATH_SAVE_VIZ, "/A_field_midstream_no_coords.csv"))
+
+df_base_with_midstream = df_base_full %>%
+  select(-STATE_NAME) %>%
+  left_join(states %>% st_drop_geometry() %>%
+              select(STATEFP, STATE_NAME = NAME)) %>%
+  mutate(STATE_NAME = case_when(is.na(STATE_NAME) ~ "Offshore Gulf of Mexico",
+                                TRUE ~ STATE_NAME)) %>%
+  left_join(A_field_midstream, by = c("STATE_NAME" = "prod_state")) %>%
+  filter(Basin != "ARCTIC OCEAN, FED.") %>% # removed Arctic Ocean
+  mutate(midstream_lo = field_midstream_factor_gCO2_MJ * 3.772/4,
+         midstream_up = field_midstream_factor_gCO2_MJ * 4.228/4) %>%
+  filter(Basin != "(N/A)") %>%
+  mutate(Basin = case_when(
+    Basin == "Offshore GOM" ~ "Offshore Gulf of Mexico",
+    TRUE ~ str_to_title(Basin)
+  ))
+
+View(df_base_with_midstream)
+
+
+# Process breakdown ----
+raw1 = read.xlsx(paste0(PATH_POLICY, "gas_run_updated_opgee_0719.xlsx"))
+raw2 = read.xlsx(paste0(PATH_POLICY, "oil_run_updated_opgee_0719.xlsx"))
+raw3 = read.xlsx(paste0(PATH_POLICY, "offshore_base.xlsx"))
+df_gas = clean_opgee_remote_run_result(raw1)
+df_oil = clean_opgee_remote_run_result(raw2)
+
+
+df_gas_with_input = clean_and_join_input(raw1,US_GAS_WITH_COMP_scaled)
+View(df_gas_with_input)
+
+df_oil_with_input = clean_and_join_input(raw2,US_OIL)
+View(df_oil_with_input)
+
+View(CI_by_process(df_oil_with_input))
+View(CI_by_process(df_gas_with_input))
+
+save_local(df_gas_with_input,"df_gas_with_input")
+save_local(df_oil_with_input,"df_oil_with_input")
+
+df_viz_oil = CI_by_process(df_oil_with_input) %>%
+  mutate(Production_Type = "OIL")
+df_viz_gas = CI_by_process(df_gas_with_input) %>%
+  mutate(Production_Type = "GAS")
+df_viz_offshore <- CI_by_process_offshore(raw3, offshore_input, gom_sf_final) 
+
+save_local(rbind(df_viz_oil, df_viz_gas) %>% filter(check == "OK"), "df_viz_updated")
+save_local(df_viz_offshore, "df_viz_offshore_updated")
 

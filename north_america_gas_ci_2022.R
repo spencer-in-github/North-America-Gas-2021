@@ -71,6 +71,7 @@ FILES_PRODUCTION =  list.files(PATH_PRODUCTION, "*.CSV")
 COUNTY_SHP_NAME =   "cb_2018_us_county_500k"
 US_COUNTIES =       read_sf(paste0(PATH_DATA, "/", COUNTY_SHP_NAME), layer = COUNTY_SHP_NAME)
 
+PATH_PUBLICATION = "/Users/spencerzhang/GitHub/PhD/North-America-Gas-2021/Code Availability/XLSX"
 YEAR = 2022
 
 # TODO insert annual production reference
@@ -161,6 +162,7 @@ load_raw_well_headers =
     return(df)
   }
 
+
 #' Title Classify wells into OIL or GAS based on its annual production
 #'
 #' @param df A dataframe containing well information and annual production data ('Annual.Oil' and 'Annual.Gas').
@@ -171,7 +173,7 @@ load_raw_well_headers =
 #' @export
 #'
 #' @examples
-classify_production = function(df, gor_sep = 100, gas_gor_indicator = 10000){
+classify_production = function(df, gor_sep = 100, gas_gor_indicator = 106000){
   
   df_classified <- df %>%
     mutate(gor = case_when(Annual.Oil >0 ~ Annual.Gas/Annual.Oil,
@@ -191,7 +193,6 @@ classify_production = function(df, gor_sep = 100, gas_gor_indicator = 10000){
 #---      4 Data Preparation        ----     
 ----------------------------------------
 
-
 # 1 - Clean the raw monthly production data into clean annual data
 # TAKE LONG TIME! please run this only once
 for (i in c(2:length(FILES_PRODUCTION))){
@@ -208,6 +209,8 @@ df_annual = read_csv(paste0(PATH_DATA, "/Well_Annual_Production_", YEAR, ".CSV")
 df_headers = merge_CSV(PATH_WELL)
 write_csv(df_headers, paste0(PATH_DATA, "/Well_Headers_", YEAR, ".CSV"))
 
+df_headers = read_csv(paste0(PATH_DATA, "/Well_Headers_", YEAR, ".CSV"))
+
 # 4 - filter for active wells and merge with annual production
 df = df_headers %>% 
   filter(`Well Status` == "ACTIVE") %>%
@@ -215,6 +218,10 @@ df = df_headers %>%
             by = c("API14" = "API.UWI"))  %>% # left join annual production, maintaining wells without production
   filter(`Production Type` %in% c("GAS", "OIL", "OIL & GAS"))
 write_csv(df, paste0(PATH_DATA, "/Active_O&G_Well_Headers_n_Annual_Production_", YEAR, ".CSV"))
+
+df_wells_with_annual_prod = read_csv(paste0(PATH_DATA, "/Active_O&G_Well_Headers_n_Annual_Production_", YEAR, ".CSV"))
+
+colnames(df_wells_with_annual_prod)
 
 ----------------------------------------
 #---    5 Well O&G Classification   ----     
@@ -243,8 +250,6 @@ mapshot(m,url = "state_diff_missing_annual_production.html")
 ## 1.3 - classification ----
 
 sum(df$`Production Type` == "OIL & GAS")/nrow(df) # 9.6%
-
-
 
 df_classified <- classify_production(df) # contain full state coverage
 write_csv(df_classified, paste0(PATH_DATA, "/", "WELL_2022_classified.csv"))
@@ -512,7 +517,6 @@ RAW_FLARE_2022 %>%
   st_drop_geometry() %>%
   write_csv(paste0(PATH_RESULT,"US_FLARE_2022_BY_FIELD.csv"))
 
-
 flaring_per_field = RAW_FLARE_2022 %>%
           st_join(US_FIELD_final) %>%
           group_by(classified.type, GEOID, County_Name, AAPG.Basin) %>%
@@ -540,6 +544,7 @@ US_OIL %>%
   select(-classified.type, -County_Name) %>%
   mutate(BCM2022 = ifelse(is.na(BCM2022), 0, BCM2022)) %>%
   write.csv(.,paste0(PATH_RESULT,"/UScounty_withflaring_2022_oil.csv"))
+
 ----------------------------------------
 #---    9 Field OPGEE Input         ----     
 ----------------------------------------
