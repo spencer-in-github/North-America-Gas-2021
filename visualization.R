@@ -499,7 +499,7 @@ p1b <-
         axis.title.x=element_blank(),
         axis.title.y=element_blank()) + 
   #scale_color_oil_gas() + 
-    scale_fill_manual(values = c("GAS" = "#E50808", "OIL" = "#1AECBA")) +
+  scale_fill_manual(values = c("GAS" = "#B1040E", "OIL" = "#008566")) +
     scale_color_manual(values = c("GAS" = "#B1040E", "OIL" = "#008566")) +
     #scale_fill_oil_gas() + 
   labs(color = "Production Type") +
@@ -543,7 +543,7 @@ p1c <-
         axis.title.y=element_blank()) + 
   #scale_color_oil_gas() + 
   scale_color_manual(values = c("GAS" = "#B1040E", "OIL" = "#008566")) +
-  scale_fill_manual(values = c("GAS" = "#E50808", "OIL" = "#1AECBA")) +
+  scale_fill_manual(values = c("GAS" = "#B1040E", "OIL" = "#008566")) +
   #scale_fill_oil_gas() + 
   labs(color = "Production Type") +
   guides(color ="none", fill = "none")
@@ -570,7 +570,7 @@ main_map <-
   geom_sf(data = states, fill = "white", color = "black", lwd = 0.2) +  # Plot US boundaries
   geom_sf(data = df_viz_bibasin %>% rename("Production Type" = Production_Type), aes(fill = `Production Type`), color = NA) +  # Use 'fill' for polygon color
   scale_fill_oil_gas() + 
-  scale_fill_manual(values = c("GAS" = "#E50808", "OIL" = "#1AECBA")) +
+  scale_fill_manual(values = c("GAS" = "#B1040E", "OIL" = "#008566")) +
   theme_NAG_publication() +
   theme(axis.line=element_blank(),
         axis.text.x=element_blank(),
@@ -602,6 +602,7 @@ alaska_plot <-
   geom_sf(data = US_FIELD_final %>% filter(STATEFP == "02", AAPG.Basin == "COOK INLET BASIN") %>% rename("Production Type" = "classified.type"), aes(fill = `Production Type`), color = NA) +  
   scale_fill_oil_gas() + 
   theme_NAG_publication() +
+  scale_fill_manual(values = c("GAS" = "#B1040E", "OIL" = "#008566")) +
     theme(axis.line=element_blank(),
           axis.text.x=element_blank(),
           axis.text.y=element_blank(),
@@ -611,7 +612,7 @@ alaska_plot <-
           legend.position="none") + 
   coord_sf(expand = FALSE,xlim = c(-180, -128), ylim = c(49, 73))  
 
-ggsave(filename = paste0(PATH_SAVE_VIZ, "f1d_alaska.png"), 
+ggsave(filename = paste0(PATH_SAVE_VIZ, "f1d_alaska.svg"), 
        plot= alaska_plot,
        #width = 100,
        #height = 50,
@@ -1102,9 +1103,9 @@ df_viz_basin %>%
   geom_sf(aes(fill = `CI_gCO2_MJ`, alpha = Annual_Gas),color = NA) +  # Use 'fill' for polygon color
   #scale_fill_binned(type = "viridis") + 
   scale_fill_gradient2(
-    low = "darkgreen", 
-    mid = "yellow", 
-    high = "red", 
+    low = "#006F54", 
+    mid = "#FEDD5C", 
+    high = "#B1040E", 
     midpoint = 40
   ) +
   theme_minimal() +  # Use a minimal theme to avoid drawing a global background
@@ -1214,8 +1215,6 @@ midstream_matrix <- states_production %>%
 View(midstream_matrix)
 s(midstream_matrix, "midstream_matrix")
 
-# wyoming gas to vermont 
-midstream_matr
 
 delivery_state_gas <- midstream_matrix %>%
   group_by(delivery_state_short, delivery_state_name) %>%

@@ -66,7 +66,8 @@ clean_and_join_input = function(df,input_df){
   
   # filter out fields with successful run results with CHECKs
   result_df = cleaned_df %>%
-    filter(`194 Lifecycle GHG emissions Total CO2 sequestered` == "OK")
+    #filter(`194 Lifecycle GHG emissions Total CO2 sequestered` == "OK")
+    filter(!is.na(`194 Lifecycle GHG emissions Total CO2 sequestered`))
   
   # merge OPGEE results with input using GEOID
   result_with_input_df <- input_df %>%
@@ -80,7 +81,7 @@ clean_and_join_input = function(df,input_df){
   return(result_with_input_df)
 }
 
-CI_by_process = function(df){
+CI_by_process_gas = function(df){
   df_new <- df %>%
     select(GEOID, 
            STATEFP = STATEFP,
@@ -89,33 +90,54 @@ CI_by_process = function(df){
            Basin = AAPG.Basin.x, 
            Well_count, 
            Annual_Gas, 
-           Annual_Oil, 
+           Annual_Oil,
+           Annual_Wat,
            BCM2022,
            Depth = True_Verti,
            Completion,
+           C1,
+           C2, 
+           C3,
+           `C4+`,
+           N2,
+           CO2,
            #FOR_mscf_bbl,
            `129 Exploration (e) Total energy consumption MJ/MJ`:`check`
-           # exploration_gCO2_MJ = `111 Exploration (e) Total GHG emissions gCO2eq/MJ`,
-           # drilling_dev_gCO2_MJ = `136 Drilling & Development (d) Total GHG emissions gCO2eq/MJ`,
-           # crude_prod_extra_gCO2_MJ = `142 Crude production & extraction (p) Total GHG emissions gCO2eq/MJ`,
-           # surface_gCO2_MJ = `148 Surface processing (s) Total GHG emissions gCO2eq/MJ`,
-           # lng_gCO2_MJ = `154 Liquefied natural gas Total GHG emissions gCO2eq/MJ`,
-           # maintenance_gCO2_MJ = `160 Maintenance (m) Total GHG emissions gCO2eq/MJ`,
-           # waste_gCO2_MJ = `166 Waste disposal (w) Total GHG emissions gCO2eq/MJ`,
-           # crude_transport_gCO2_MJ =`172 Crude transport (t) Total GHG emissions gCO2eq/MJ`,
-           # gas_dis_gCO2_MJ = `179 Gas Distribution Total GHG emissions gCO2eq/MJ`,
-           # other_gCO2_MJ = `183 Other small sources Total GHG emissions gCO2eq/MJ`,
-           # offsite_gCO2_MJ = `185 Offsite emissions credit/debit Total GHG emissions gCO2eq/MJ`,
-           # CO2_seq_gCO2_MJ = `190 Carbon dioxide sequestration Total CO2 sequestered gCO2/MJ`,
-           # exploration_gCO2_MJ_vff = `132 Exploration (e) Total GHG emissions VFF gCO2eq/MJ`,
-           # drilling_dev_gCO2_MJ_vff = `138 Drilling & Development (d) Total GHG emissions VFF gCO2eq/MJ`,
-           # crude_prod_extra_gCO2_MJ_vff = `144 Crude production & extraction (p) Total GHG emissions VFF gCO2eq/MJ`,
-           # surface_gCO2_MJ_vff = `150 Surface processing (s) Total GHG emissions VFF gCO2eq/MJ`,
-           # lng_gCO2_MJ_vff = `156 Liquefied natural gas Total GHG emissions VFF gCO2eq/MJ`,
-           # maintenance_gCO2_MJ_vff = `162 Maintenance (m) Total GHG emissions VFF gCO2eq/MJ`,
-           # waste_gCO2_MJ_vff = `168 Waste disposal (w) Total GHG emissions VFF gCO2eq/MJ`,
-           # crude_transport_gCO2_MJ_vff =`174 Crude transport (t) Total GHG emissions VFF gCO2eq/MJ`,
-           # gas_dis_gCO2_MJ_vff = `181 Gas Distribution Total GHG emissions VFF gCO2eq/MJ`,
+    )
+  
+  return(df_new)
+}
+
+CI_by_process_oil = function(df){
+  df_new <- df %>%
+    mutate(
+      C1 = ifelse("C1" %in% colnames(.), C1, NA),
+      C2 = ifelse(exists("C2", where = df), C2, NA),
+      C3 = ifelse(exists("C3", where = df), C3, NA),
+      `C4+` = ifelse(exists("C4+", where = df), `C4+`, NA),
+      N2 = ifelse(exists("N2", where = df), N2, NA),
+      CO2 = ifelse(exists("CO2", where = df), CO2, NA)
+    ) %>%
+    select(GEOID, 
+           STATEFP = STATEFP,
+           STATE_NAME,
+           County = County_Name.x, 
+           Basin = AAPG.Basin.x, 
+           Well_count, 
+           Annual_Gas, 
+           Annual_Oil, 
+           Annual_Wat,
+           BCM2022,
+           Depth = True_Verti,
+           Completion,
+           C1,
+           C2, 
+           C3,
+           `C4+`,
+           N2,
+           CO2,
+           #FOR_mscf_bbl,
+           `129 Exploration (e) Total energy consumption MJ/MJ`:`check`
            )
   
   return(df_new)
@@ -132,6 +154,14 @@ CI_by_process_offshore <- function(df, input_df, df_sf){
   df_new <- clean_opgee_remote_run_result(df) %>%
     left_join(input_df, by = c("20 Field properties Field name NA"  = "field")) %>%
     mutate(
+      C1 = ifelse(exists("C1", where = df), C1, NA),
+      C2 = ifelse(exists("C2", where = df), C2, NA),
+      C3 = ifelse(exists("C3", where = df), C3, NA),
+      `C4+` = ifelse(exists("C4+", where = df), `C4+`, NA),
+      N2 = ifelse(exists("N2", where = df), N2, NA),
+      CO2 = ifelse(exists("CO2", where = df), CO2, NA)
+    ) %>%
+    mutate(
       GEOID = 00000, 
       STATEFP = 00,
       STATE_NAME = "GOM",
@@ -147,35 +177,20 @@ CI_by_process_offshore <- function(df, input_df, df_sf){
            Well_count = `24 Field properties Number of producing wells -`, 
            Annual_Gas, 
            Annual_Oil, 
+           Annual_Wat,
            BCM2022,
            Depth = `22 Field properties Field depth ft`,
            Completion,
            #FOR_mscf_bbl,
+           C1,
+           C2, 
+           C3,
+           `C4+`,
+           N2,
+           CO2,
            `129 Exploration (e) Total energy consumption MJ/MJ`:`190 Carbon dioxide sequestration Total CO2 sequestered gCO2/MJ`,
           CI_gCO2_MJ = `192 Lifecycle GHG emissions Total CO2 sequestered gCO2eq/MJ`,
           check = `194 Lifecycle GHG emissions Total CO2 sequestered`
-           # exploration_gCO2_MJ = `130 Exploration (e) Total GHG emissions gCO2eq/MJ`,
-           # drilling_dev_gCO2_MJ = `136 Drilling & Development (d) Total GHG emissions gCO2eq/MJ`,
-           # crude_prod_extra_gCO2_MJ = `142 Crude production & extraction (p) Total GHG emissions gCO2eq/MJ`,
-           # surface_gCO2_MJ = `148 Surface processing (s) Total GHG emissions gCO2eq/MJ`,
-           # lng_gCO2_MJ = `154 Liquefied natural gas Total GHG emissions gCO2eq/MJ`,
-           # maintenance_gCO2_MJ = `160 Maintenance (m) Total GHG emissions gCO2eq/MJ`,
-           # waste_gCO2_MJ = `166 Waste disposal (w) Total GHG emissions gCO2eq/MJ`,
-           # crude_transport_gCO2_MJ =`172 Crude transport (t) Total GHG emissions gCO2eq/MJ`,
-           # gas_dis_gCO2_MJ = `179 Gas Distribution Total GHG emissions gCO2eq/MJ`,
-           # other_gCO2_MJ = `183 Other small sources Total GHG emissions gCO2eq/MJ`,
-           # offsite_gCO2_MJ = `185 Offsite emissions credit/debit Total GHG emissions gCO2eq/MJ`,
-           # CO2_seq_gCO2_MJ = `190 Carbon dioxide sequestration Total CO2 sequestered gCO2/MJ`,
-           # exploration_gCO2_MJ_vff = `132 Exploration (e) Total GHG emissions VFF gCO2eq/MJ`,
-           # drilling_dev_gCO2_MJ_vff = `138 Drilling & Development (d) Total GHG emissions VFF gCO2eq/MJ`,
-           # crude_prod_extra_gCO2_MJ_vff = `144 Crude production & extraction (p) Total GHG emissions VFF gCO2eq/MJ`,
-           # surface_gCO2_MJ_vff = `150 Surface processing (s) Total GHG emissions VFF gCO2eq/MJ`,
-           # lng_gCO2_MJ_vff = `156 Liquefied natural gas Total GHG emissions VFF gCO2eq/MJ`,
-           # maintenance_gCO2_MJ_vff = `162 Maintenance (m) Total GHG emissions VFF gCO2eq/MJ`,
-           # waste_gCO2_MJ_vff = `168 Waste disposal (w) Total GHG emissions VFF gCO2eq/MJ`,
-           # crude_transport_gCO2_MJ_vff =`174 Crude transport (t) Total GHG emissions VFF gCO2eq/MJ`,
-           # gas_dis_gCO2_MJ_vff = `181 Gas Distribution Total GHG emissions VFF gCO2eq/MJ`,
-           # CI_gCO2_MJ = `192 Lifecycle GHG emissions Total CO2 sequestered gCO2eq/MJ`
            ) %>%
     filter(!is.na(CI_gCO2_MJ)) %>%
     mutate(
