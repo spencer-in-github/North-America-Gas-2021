@@ -119,189 +119,85 @@ print(f"[SUCCESS] Saved combined data to {output_path}")
 # Turn into flow matrix
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Load the flow data
-flow_df = combined_df
+# # Load the flow data
+# flow_df = combined_df
 
-# Pivot the DataFrame to create the state-to-state flow matrix
-flow_matrix = flow_df.pivot_table(
-    index="from_state",
-    columns="to_state",
-    values="flow_value_mmcf",
-    aggfunc="sum",    # Sum flows if there are duplicates
-    fill_value=0      # Replace NaN with 0
-)
+# # Pivot the DataFrame to create the state-to-state flow matrix
+# flow_matrix = flow_df.pivot_table(
+#     index="from_state",
+#     columns="to_state",
+#     values="flow_value_mmcf",
+#     aggfunc="sum",    # Sum flows if there are duplicates
+#     fill_value=0      # Replace NaN with 0
+# )
 
-# Display a preview
-print(flow_matrix.head())
+# # Display a preview
+# print(flow_matrix.head())
 
-# Optionally save to CSV
-flow_matrix.to_csv(path_save + "state_to_state_flow_matrix.csv")
-print("Flow matrix saved to state_to_state_flow_matrix.csv")
+# # Optionally save to CSV
+# flow_matrix.to_csv(path_save + "state_to_state_flow_matrix.csv")
+# print("Flow matrix saved to state_to_state_flow_matrix.csv")
 
-US_states = ['Alabama', 'Alaska', 'Arizona', 'Arkansas','California', 'Colorado', 'Connecticut', 'Delaware',
-       'District of Columbia', 
-       'Federal Offshore--Gulf of America', 'Florida', 'Georgia',
-     'Idaho', 'Illinois', 'India', 'Indiana', 
-       'Iowa', 'Kansas', 'Kentucky',  'Louisiana', 'Maine', 'Maryland',
-       'Massachusetts',  'Michigan', 'Minnesota', 'Mississippi',
-       'Missouri', 'Montana', 'Nebraska',  'Nevada',
-       'New Hampshire', 'New Jersey', 'New Mexico', 'New York',
-       'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon',
-       'Pennsylvania', 
-       'Rhode Island', 'South Carolina', 'South Dakota',
-     'Tennessee', 'Texas', 'Utah', 'Vermont',
-       'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming']
+# # Identify rows not in US_states → treat them as "International"
+# non_us_rows = [state for state in flow_matrix.index if state not in US_states]
 
-# Identify rows not in US_states → treat them as "International"
-non_us_rows = [state for state in flow_matrix.index if state not in US_states]
+# # Sum the non-US rows into one
+# international_row = flow_matrix.loc[non_us_rows].sum()
 
-# Sum the non-US rows into one
-international_row = flow_matrix.loc[non_us_rows].sum()
+# # Drop non-US rows from matrix
+# flow_matrix_cleaned = flow_matrix.drop(index=non_us_rows)
 
-# Drop non-US rows from matrix
-flow_matrix_cleaned = flow_matrix.drop(index=non_us_rows)
+# # Append 'International' row
+# flow_matrix_cleaned.loc['International'] = international_row
 
-# Append 'International' row
-flow_matrix_cleaned.loc['International'] = international_row
+# # Reorder if you want 'International' on top (optional)
+# flow_matrix_cleaned = flow_matrix_cleaned.reset_index().set_index('from_state')
+# flow_matrix_cleaned = flow_matrix_cleaned.reindex(['International'] + [s for s in flow_matrix_cleaned.index if s != 'International']).clip(lower=0)
 
-# Reorder if you want 'International' on top (optional)
-flow_matrix_cleaned = flow_matrix_cleaned.reset_index().set_index('from_state')
-flow_matrix_cleaned = flow_matrix_cleaned.reindex(['International'] + [s for s in flow_matrix_cleaned.index if s != 'International']).clip(lower=0)
+# # Define full list of valid U.S. states + offshore + 'International'
+# valid_states = [
+#     'Alabama', 'Alaska', 'Arizona', 'Arkansas','California', 'Colorado',
+#     'Connecticut', 'Delaware', 'District of Columbia', 'Florida', 'Georgia',
+#     'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana',
+#     'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi',
+#     'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey',
+#     'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio',
+#     'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina',
+#     'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia',
+#     'Washington', 'West Virginia', 'Wisconsin', 'Wyoming',
+#     'Federal Offshore--Gulf of America', 'International'
+# ]
 
-# Define full list of valid U.S. states + offshore + 'International'
-valid_states = [
-    'Alabama', 'Alaska', 'Arizona', 'Arkansas','California', 'Colorado',
-    'Connecticut', 'Delaware', 'District of Columbia', 'Florida', 'Georgia',
-    'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana',
-    'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi',
-    'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey',
-    'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio',
-    'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina',
-    'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia',
-    'Washington', 'West Virginia', 'Wisconsin', 'Wyoming',
-    'Federal Offshore--Gulf of America', 'International'
-]
+# # Reindex rows and columns to enforce square shape
+# flow_matrix_square = flow_matrix_cleaned.reindex(
+#     index=valid_states,
+#     columns=valid_states,
+#     fill_value=0
+# )
 
-# Reindex rows and columns to enforce square shape
-flow_matrix_square = flow_matrix_cleaned.reindex(
-    index=valid_states,
-    columns=valid_states,
-    fill_value=0
-)
+# # Sanity check
+# print("Final square matrix shape:", flow_matrix_square.shape)
 
-# Sanity check
-print("Final square matrix shape:", flow_matrix_square.shape)
+# # Load state production and consumption data
+# prod_cons_df = pd.read_csv('/Users/spencerzhang/GitHub/PhD/North-America-Gas-2021/revision_data/state production consumption/state_prod_consump.csv')
 
-# Load state production and consumption data
-prod_cons_df = pd.read_csv('/Users/spencerzhang/GitHub/PhD/North-America-Gas-2021/revision_data/state production consumption/state_prod_consump.csv')
+# # Fill NA with 0 for safe minimum computation
+# prod_cons_df = prod_cons_df.fillna(0)
 
-# Fill NA with 0 for safe minimum computation
-prod_cons_df = prod_cons_df.fillna(0)
+# # Compute the minimum of production and consumption
+# # prod_cons_df["diag_value"] = prod_cons_df[[
+# #     "natural_gas_dry_production_MMcf",
+# #     "natural_gas_consumption_value_MMcf"
+# # ]].min(axis=1)
 
-# Compute the minimum of production and consumption
-# prod_cons_df["diag_value"] = prod_cons_df[[
-#     "natural_gas_dry_production_MMcf",
-#     "natural_gas_consumption_value_MMcf"
-# ]].min(axis=1)
+# prod_cons_df["diag_value"] = prod_cons_df["natural_gas_dry_production_MMcf"]
 
-prod_cons_df["diag_value"] = prod_cons_df["natural_gas_dry_production_MMcf"]
+# # Set diagonal values in flow matrix
+# for state, diag_val in zip(prod_cons_df["state"], prod_cons_df["diag_value"]):
+#     if state in flow_matrix_square.index and state in flow_matrix_square.columns:
+#         flow_matrix_square.loc[state, state] = diag_val
 
-# Set diagonal values in flow matrix
-for state, diag_val in zip(prod_cons_df["state"], prod_cons_df["diag_value"]):
-    if state in flow_matrix_square.index and state in flow_matrix_square.columns:
-        flow_matrix_square.loc[state, state] = diag_val
-
-# Save updated matrix
-updated_path = path_save + "state_to_state_flow_matrix_with_diag.csv"
-flow_matrix_square.to_csv(updated_path)
-print(f"Saved matrix with diagonal values to: {updated_path}")
-
-# Compute row sums
-col_sums = flow_matrix_square.sum(axis=1)
-
-# Normalize each row: divide each value by the row's sum
-normalized_matrix = flow_matrix_square.div(col_sums, axis=0)
-
-# Fill any NaNs (from divide-by-zero) with 0
-normalized_matrix = normalized_matrix.fillna(0)
-
-# Display preview
-print(normalized_matrix.head())
-
-# Optionally save to CSV
-normalized_path = path_save + "normalized_input_matrix.csv"
-normalized_matrix.to_csv(normalized_path)
-print(f"Saved normalized matrix to: {normalized_path}")
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Turn into flow matrix
-# ─────────────────────────────────────────────────────────────────────────────
-
-X = normalized_matrix
-
-# Convert to NumPy array and remove last row and column
-# Last row/column is international
-# International requires no input from other states (lack of data) therefore gives a zero column
-# would cause matrix to be not invertible (cant compute inverse)
-X_mat = X.values[:-1, :-1]
-
-# Normalize with row sum again after removing international column/row
-# Compute row sums
-row_sums = X_mat.sum(axis=1, keepdims=True)
-# Avoid divide-by-zero: set zeros to 1 temporarily
-row_sums[row_sums == 0] = 1
-# Normalize rows manually
-X_mat = X_mat / row_sums
-# Replace NaNs or infs just in case (e.g., from divide-by-zero)
-X_mat = np.nan_to_num(X_mat)
-
-# Identity matrix of compatible size
-I = np.identity(X_mat.shape[0])
-
-# Compute (I - X)
-I_minus_X = I - X_mat
-
-np.linalg.det(I_minus_X)
-
-# Convert to DataFrame for easier tracking
-df = pd.DataFrame(normalized_matrix)
-
-# Normalize columns to unit vectors
-def normalize(v):
-    norm = np.linalg.norm(v)
-    return v / norm if norm != 0 else v
-
-normalized_cols = {col: normalize(df[col].values) for col in df.columns}
-
-# Check cosine similarity (dot product of normalized vectors)
-parallel_pairs = []
-columns = list(normalized_cols.keys())
-
-for i in range(len(columns)):
-    for j in range(i + 1, len(columns)):
-        col_i = columns[i]
-        col_j = columns[j]
-        dot_product = np.dot(normalized_cols[col_i], normalized_cols[col_j])
-        if np.isclose(abs(dot_product), 1.0):  # parallel if cosine = ±1
-            parallel_pairs.append((col_i, col_j))
-
-print("Parallel column pairs:", parallel_pairs)
-
-# Attempt matrix inversion
-try:
-    epsilon = 1e-6
-    I_minus_A_reg = I_minus_X + np.eye(I_minus_X.shape[0]) * epsilon
-    inverse = np.linalg.inv(I_minus_A_reg)
-    # Convert back to DataFrame with same index/columns
-    inverse_df = pd.DataFrame(inverse, index=X.index[:-1], columns=X.columns[:-1])
-
-    cleaned_matrix = inverse_df.mask(inverse_df < 1e-8, 0)
-
-    # Save to CSV
-    inverse_df.to_csv(path_save + "inverse_I_minus_X.csv")
-    cleaned_matrix.to_csv(path_save + "cleaned_leontief_inverse.csv")
-    print("Inverse matrix saved to " + path_save + "inverse_I_minus_X.csv")
-    print(inverse_df.head())
-except np.linalg.LinAlgError as e:
-    print("Matrix (I - X) is not invertible:", e)
-
+# # Save updated matrix
+# updated_path = path_save + "state_to_state_flow_matrix_with_diag.csv"
+# flow_matrix_square.to_csv(updated_path)
+# print(f"Saved matrix with diagonal values to: {updated_path}")

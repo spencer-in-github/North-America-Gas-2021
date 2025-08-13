@@ -189,7 +189,7 @@ A_plant_to_rnd <- plant_to_rnd[2:nrow(plant_to_rnd), 2:ncol(plant_to_rnd)] %>%
   mutate(perc = throughput/sum(throughput))
 
 # find state-to-state distance
-
+  
 unique_states = unique(c(unique(A_plant_to_rnd$plant), unique(A_plant_to_rnd$`R&D`)))
 
 sf_states <- states()
@@ -217,7 +217,6 @@ A_midstream_emission <- A_plant_to_rnd %>%
 
 optim = read_excel(PATH_OPTIM)
 plants <- colnames(optim)
-
 
 sum(plants %in% optim_plant_state$Plant)    # 98%
 length(plants)                              # 593
@@ -267,6 +266,10 @@ A_field_plant <- A_field_plant %>%
 
 colnames(A_field_plant) <- c("proc","proc_state","prod_field","throughput","prod_state","prod_state_fips","prod_cnty_fips","prod_fips")
 
+path_new_midstream = "/Users/spencerzhang/GitHub/PhD/North-America-Gas-2021/revision_data/midstream/"
+saveRDS(A_field_plant, paste0(path_new_midstream, "A_field_plant.rds"))
+write_csv(A_field_plant, paste0(path_new_midstream, "A_field_plant.csv"))
+
 A_field_plant_states <- A_field_plant %>%
   mutate(proc_state = gsub("\\_.*", "", proc_state)) %>%
   group_by(proc_state, prod_state, prod_state_fips) %>%
@@ -298,7 +301,6 @@ states_production = ci_with_input %>%
   left_join(states %>% select(STATEFP, STUSPS, NAME) %>%
               st_drop_geometry(.)) 
             #CI = weighted.mean(CI, Annual_Gas, na.rm  =T))
-
 
 A_plant_proc_gas_mcf = A_field_plant_states %>%
   left_join(states_production %>% select(NAME, Annual_Gas), by = c("prod_state" = "NAME")) %>%

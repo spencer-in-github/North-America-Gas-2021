@@ -253,3 +253,94 @@ u <- function(coln){
 s <- function(df, fname){
   save_local(df, fname)
 }
+
+
+vff_df <- function(raw){
+  
+  #raw = gas_results
+  df= raw[c(126,357:533),5:ncol(raw)]
+  #View(df)
+  
+  df[1,1] = "GEOID"
+  df[2:43,1] = "Venting_ton_CO2"
+  df[45:86,1] = "Flaring_ton_CO2"
+  df[88:129,1] = "Fugitives_ton_CO2"
+  df[131:172,1] = "Total_ton_CO2"
+  df[174,1] = "CI_denominator_MJ"
+  
+  sheet = df %>%
+    unite(., Var, 1,2, sep = "_", remove = T, na.rm = T) %>%
+    filter(!str_detect(Var, "-") & str_length(Var) > 0)
+  
+  #View(sheet)
+  
+  data1 = as.data.frame(t(sheet))
+  colnames(data1) = data1[1,]
+  data1 = data1[2:nrow(data1),]
+  row.names(data1) = NULL
+  
+  View(data1)
+  
+  df <- data1 %>%
+    mutate_if(is.character,as.numeric) %>%
+    filter(!is.na(GEOID)) %>%
+    rowwise() %>%
+    mutate(
+      venting = sum(c_across(starts_with("Venting_"))),
+      flaring = sum(c_across(starts_with("Flaring_"))),
+      fugitives = sum(c_across(starts_with("Fugitives_"))),
+      total = sum(c_across(starts_with("Total_")))
+    ) %>%
+    ungroup() %>%
+    select(GEOID, CI_denominator_MJ:total)
+  
+  #View(df)
+  return(df)
+}
+
+vff_process_df <- function(raw){
+  
+  raw = gas_results
+  df= raw[c(126,357:533),5:ncol(raw)]
+  #View(df)
+  
+  df[1,1] = "GEOID"
+  df[2:43,1] = "Venting_ton_CO2"
+  df[45:86,1] = "Flaring_ton_CO2"
+  df[88:129,1] = "Fugitives_ton_CO2"
+  df[131:172,1] = "Total_ton_CO2"
+  df[174,1] = "CI_denominator_MJ"
+  
+  sheet = df %>%
+    unite(., Var, 1,2, sep = "_", remove = T, na.rm = T) %>%
+    #filter(!str_detect(Var, "-") & str_length(Var) > 0)
+    filter(str_length(Var) > 0)
+  
+  #View(sheet)
+  
+  data1 = as.data.frame(t(sheet))
+  colnames(data1) = data1[1,]
+  data1 = data1[2:nrow(data1),]
+  row.names(data1) = NULL
+  
+  #View(data1)
+  
+  df <- data1 %>%
+    mutate_if(is.character,as.numeric) %>%
+    filter(!is.na(GEOID)) %>%
+    select_if(~ !all(. == 0))
+  # rowwise() %>%
+  # mutate(
+  #   venting = sum(c_across(starts_with("Venting_"))),
+  #   flaring = sum(c_across(starts_with("Flaring_"))),
+  #   fugitives = sum(c_across(starts_with("Fugitives_"))),
+  #   total = sum(c_across(starts_with("Total_")))
+  # ) %>%
+  # ungroup() %>%
+  #select(GEOID, CI_denominator_MJ:total)
+  
+  #View(df)
+  return(df)
+}
+
+
