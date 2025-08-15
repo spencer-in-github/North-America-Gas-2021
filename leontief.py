@@ -44,6 +44,14 @@ producer_id_map = {state: idx + 1 for idx, state in enumerate(unique_nonzero_pro
 # Add unique producer ID to production data (only for non-zero producers)
 prod_df['producer_id'] = prod_df.apply(lambda row: producer_id_map[row['state']] if (row['state'] in producer_id_map) else np.nan, axis=1)
 
+new_row = pd.DataFrame([{
+    "state": "International",
+    "natural_gas_dry_production_MMcf": 2779494,
+    "producer_id": 36
+}])
+
+prod_df = pd.concat([prod_df, new_row], ignore_index=True)
+
 # Save the updated production data with IDs to a new CSV file
 prod_df.to_csv(path_production + 'state_production_2023_with_ids.csv', index=False)
 # ... existing code ...
@@ -115,6 +123,14 @@ consumer_id_map['International'] = 53
 
 # Add unique consumer ID to consumption data (only for non-zero consumers)
 cons_df['consumer_id'] = cons_df.apply(lambda row: consumer_id_map[row['state']] if (row['state'] in consumer_id_map) else np.nan, axis=1)
+
+new_row = pd.DataFrame([{
+    "state": "International",
+    "natural_gas_consumption_value_MMcf": 6941540,
+    "consumer_id": 53
+}])
+
+cons_df = pd.concat([cons_df, new_row], ignore_index=True)
 
 # Save the updated consumption data with IDs to a new CSV file
 cons_df.to_csv(path_production + 'state_consumption_2023_with_ids.csv', index=False)

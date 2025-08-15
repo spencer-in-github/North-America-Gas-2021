@@ -62,6 +62,47 @@ col_contrib.to_csv(folder_path +"column_contribution_percentage_receiving.csv")
 row_contrib_long.to_csv(folder_path+ "row_contribution_percentage_production_long.csv", index=False)
 col_contrib_long.to_csv(folder_path +"column_contribution_percentage_receiving_long.csv", index=False)
 
+# Filter out rows where contribution is 0
+row_contrib_long_nonzero = row_contrib_long[row_contrib_long['contribution_percentage'] != 0]
+col_contrib_long_nonzero = col_contrib_long[col_contrib_long['contribution_percentage'] != 0]
+
+# Save filtered versions
+row_contrib_long_nonzero.to_csv(folder_path + "row_contribution_percentage_production_long_nonzero.csv", index=False)
+col_contrib_long_nonzero.to_csv(folder_path + "column_contribution_percentage_receiving_long_nonzero.csv", index=False)
+
+# --- Column (destination) contributions ---
+col_gt1 = col_contrib_long[col_contrib_long['contribution_percentage'] > 1].copy()
+
+# keep only destinations that still have data after the filter
+col_gt1 = col_gt1[col_gt1.groupby('destination')['contribution_percentage'].transform('sum') > 0]
+
+# scale to 100 within each destination
+col_sums = col_gt1.groupby('destination')['contribution_percentage'].transform('sum')
+col_gt1['contribution_percentage'] = (col_gt1['contribution_percentage'] / col_sums) * 100
+
+# optional: tidy up / round
+col_gt1['contribution_percentage'] = col_gt1['contribution_percentage'].round(6)
+
+col_gt1.to_csv(folder_path + "column_contribution_percentage_receiving_long_gt1_scaled100.csv",
+               index=False)
+
+# --- Row (source) contributions ---
+row_gt1 = row_contrib_long[row_contrib_long['contribution_percentage'] > 1].copy()
+
+# keep only sources that still have data after the filter
+row_gt1 = row_gt1[row_gt1.groupby('source')['contribution_percentage'].transform('sum') > 0]
+
+# scale to 100 within each source
+row_sums = row_gt1.groupby('source')['contribution_percentage'].transform('sum')
+row_gt1['contribution_percentage'] = (row_gt1['contribution_percentage'] / row_sums) * 100
+
+# optional: tidy up / round
+row_gt1['contribution_percentage'] = row_gt1['contribution_percentage'].round(6)
+
+row_gt1.to_csv(folder_path + "row_contribution_percentage_production_long_gt1_scaled100.csv",
+               index=False)
+
+
 # Display the results (if in a notebook or script with UI)
 print("Row Contribution Percentage (first 5 rows):")
 print(row_contrib.head())
